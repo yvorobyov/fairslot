@@ -65,4 +65,7 @@ All settings: [docs/SETTINGS.md](docs/SETTINGS.md). Ready profiles and when to u
 * The simulator (`python -m fairslot sim`) covers the draw only.
 * A lottery cannot satisfy everyone. Compare profiles on your own numbers before you announce one.
 
+## Responsible use
+Made for fair sharing of limited places and for protecting honest members. Scores and suggestions are aids, not verdicts: a person decides, and people should know how their data is used. Provided "as is", without warranty; the author is not liable for how it is used. Do not use it to profile, harass or discriminate, to rig a draw, or to attack a booking system. See [RESPONSIBLE_USE](../docs/RESPONSIBLE_USE.md) and [SAFEGUARDS](../docs/SAFEGUARDS.md).
+
 MIT license. Jegor, 2026.

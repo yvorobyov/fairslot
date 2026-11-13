@@ -1,4 +1,5 @@
 import http.server, json, os, subprocess, sys, tempfile, threading, unittest, urllib.request
+os.environ["FAIRSLOT_ALLOW_LOCAL"] = "1"  # the tests talk to a local server
 from datetime import datetime
 from fairslot import sources as S, config as C, server
 from fairslot.engine import run, verify_published
@@ -169,6 +170,19 @@ class Server(unittest.TestCase):
             r = subprocess.run([sys.executable, "-m", "fairslot", "fetch", "--workspace", ws, "--out", os.path.join(d, "o")], capture_output=True, text=True, env=env, cwd=ROOT)
             self.assertEqual(r.returncode, 0, r.stderr); self.assertTrue(os.path.exists(os.path.join(d, "o", "applications.csv")))
         finally: web.close()
+
+
+class SafeUrl(unittest.TestCase):
+    def test_internal_addresses_blocked(self):
+        from fairslot import sources
+        old = os.environ.pop("FAIRSLOT_ALLOW_LOCAL", None)
+        try:
+            for u in ("http://127.0.0.1:1/x", "http://169.254.169.254/", "http://10.0.0.1/", "file:///etc/passwd", "ftp://example.com/x"):
+                with self.assertRaises(ValueError, msg=u):
+                    sources.check_url(u)
+        finally:
+            if old is not None:
+                os.environ["FAIRSLOT_ALLOW_LOCAL"] = old
 
 
 if __name__ == "__main__":

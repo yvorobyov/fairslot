@@ -60,11 +60,43 @@ def guess_mapping(headers):
 
 
 # ------------------------------------------------------------------ http
+def check_url(url):
+    """Only public http(s) addresses. Blocks loopback, private, link-local and other internal targets (also after redirects)."""
+    import ipaddress, os, socket
+    from urllib.parse import urlparse
+    u = urlparse(url or "")
+    if u.scheme not in ("http", "https") or not u.hostname:
+        raise ValueError("bad url")
+    try:
+        infos = socket.getaddrinfo(u.hostname, u.port or (443 if u.scheme == "https" else 80), proto=socket.IPPROTO_TCP)
+    except OSError:
+        raise ValueError("bad url")
+    if os.environ.get("FAIRSLOT_ALLOW_LOCAL") == "1":  # for tests with a local server only
+        return
+    for i in infos:
+        ip = ipaddress.ip_address(i[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified:
+            raise ValueError("internal address")
+
+
+class _Guard(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        check_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+MAX_BYTES = 10 * 1024 * 1024
+
+
 def http_get(url, headers=None, timeout=25):
     req = urllib.request.Request(url, headers=dict({"User-Agent": "fairslot/0.1"}, **(headers or {})))
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.read().decode("utf-8-sig", errors="replace")
+        check_url(url)
+        with urllib.request.build_opener(_Guard).open(req, timeout=timeout) as r:
+            data = r.read(MAX_BYTES + 1)
+            if len(data) > MAX_BYTES:
+                raise SourceError("The file is too large (over 10 MB).")
+            return data.decode("utf-8-sig", errors="replace")
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
             raise SourceError("Доступ закрыт (%s). Проверьте токен или откройте доступ к файлу «всем, у кого есть ссылка»." % e.code)
@@ -95,7 +127,7 @@ def parse_csv_text(text):
     first = text.splitlines()[0]
     delim = ";" if first.count(";") > first.count(",") else ("\t" if "\t" in first else ",")
     rows = list(csv.DictReader(io.StringIO(text), delimiter=delim))
-    return [{(k or "").strip(): (v or "").strip() for k, v in r.items()} for r in rows]
+    return [{(k or "").strip(): (v if isinstance(v, str) else " ".join(v or [])).strip() for k, v in r.items() if k is not None} for r in rows]
 
 
 def parse_when(s, utc_offset=0):
