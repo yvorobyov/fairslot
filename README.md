@@ -12,10 +12,12 @@ It decides who gets which slot and shows the proof. It never books anything; a p
 ## Start in 2 minutes (browser)
 
 1. Download `fairslot.html` and double-click it.
-2. Press **Load example**, then **Run the draw**.
+2. An example is preloaded. Press **Run the draw**.
 3. Read the groups on the **Result** tab. Open **Verify**, press **Use current result**: the page recomputes the draw and confirms it.
 
 Full walkthrough: [docs/GUIDE.md](docs/GUIDE.md) (Russian: [docs/GUIDE_RU.md](docs/GUIDE_RU.md)).
+
+Automatic loading of applications (Google Sheet, calendar .ics, Calendly, CSV/JSON link): `python -m fairslot app`, see [docs/SOURCES.md](docs/SOURCES.md).
 
 ## Start in 2 minutes (command line)
 

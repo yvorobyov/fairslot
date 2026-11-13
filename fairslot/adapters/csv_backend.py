@@ -20,7 +20,7 @@ def read_slots(path):
 
 def read_members(path):
     with open(path, newline="", encoding="utf-8-sig") as f:
-        return {r["id"]: {"level": r.get("level", "")} for r in csv.DictReader(f)}
+        return {r["id"]: {"level": r.get("level", ""), "name": r.get("name", "")} for r in csv.DictReader(f)}
 
 
 def read_applications(path):

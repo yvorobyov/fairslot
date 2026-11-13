@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>fairslot</title>
+<style>
+/* Layout: one calm column. Header, a segmented tab bar, then cards. Court-green accent on warm neutrals. */
+:root{
+  --bg:#f3f2ee; --card:#ffffff; --fg:#1b1d1c; --muted:#6b706d; --line:#e2e0d9;
+  --accent:#0d7a5f; --accent-fg:#ffffff; --accent-soft:#dff1ea;
+  --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe4e1; --ok:#1c7a3c; --ok-soft:#e1f3e6;
+  --lv0:#e0a526; --lv1:#2f8fd8; --lv2:#8a4fd3;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --shadow:0 1px 2px rgba(20,24,22,.06),0 6px 20px rgba(20,24,22,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121514; --card:#1b1f1e; --fg:#eceeed; --muted:#9aa19d; --line:#2b3130;
+  --accent:#3ccfa5; --accent-fg:#06231b; --accent-soft:#16342c;
+  --warn:#f0b35a; --warn-soft:#3a2d14; --bad:#ff8c84; --bad-soft:#3d1c1a; --ok:#6fd48c; --ok-soft:#173222;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121514; --card:#1b1f1e; --fg:#eceeed; --muted:#9aa19d; --line:#2b3130;
+  --accent:#3ccfa5; --accent-fg:#06231b; --accent-soft:#16342c;
+  --warn:#f0b35a; --warn-soft:#3a2d14; --bad:#ff8c84; --bad-soft:#3d1c1a; --ok:#6fd48c; --ok-soft:#173222;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased;
+  padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{font-weight:700;font-size:22px;letter-spacing:-.02em}
+.logo b{color:var(--accent)}
+.pill{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.spacer{flex:1}
+.seg{display:inline-flex;background:var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;padding:6px 14px;border-radius:8px;cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--card);color:var(--fg);box-shadow:var(--shadow);font-weight:600}
+.seg.small button{padding:3px 10px;font-size:13px}
+.tabs{align-self:flex-start;max-width:100%;overflow-x:auto}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card h2{margin:0;font-size:17px;letter-spacing:-.01em}
+.card h3{margin:0;font-size:14px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:12.5px;color:var(--muted);font-weight:600}
+input[type=text],input[type=number],select,textarea{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%;min-width:0}
+textarea{font-family:var(--mono);font-size:12.5px;line-height:1.45;resize:vertical;min-height:130px;white-space:pre}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.sw span{font-size:14px}
+.sw input{appearance:none;width:40px;height:24px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;flex:none;border:0;padding:0}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.sw input:checked{background:var(--accent)}
+.sw input:checked::after{transform:translateX(16px)}
+.btn{border:0;background:var(--accent);color:var(--accent-fg);font:inherit;font-weight:600;font-size:15px;padding:10px 18px;border-radius:12px;cursor:pointer}
+.btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.btn.small{font-size:13px;padding:6px 11px;border-radius:9px}
+.btn:active{transform:translateY(1px)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.about{background:var(--accent-soft);color:var(--fg);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:var(--bg);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--muted)}
+.slot{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.slot-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.slot-h b{font-size:16px;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:3px 11px 3px 8px;font-size:14px}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
+.chip.owner{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.chip.free{border-style:dashed;color:var(--muted)}
+.tag{font-size:12px;border-radius:7px;padding:2px 8px;font-weight:600}
+.tag.warn{background:var(--warn-soft);color:var(--warn)} .tag.ok{background:var(--ok-soft);color:var(--ok)} .tag.bad{background:var(--bad-soft);color:var(--bad)}
+.link{font-family:var(--mono);font-size:12px;word-break:break-all;background:var(--bg);border-radius:8px;padding:6px 8px;flex:1;min-width:0}
+.msg{border-radius:12px;padding:10px 12px;font-size:14px}
+.msg.bad{background:var(--bad-soft);color:var(--bad)} .msg.ok{background:var(--ok-soft);color:var(--ok)} .msg.warn{background:var(--warn-soft);color:var(--warn)}
+details summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}
+pre.json{font-family:var(--mono);font-size:12px;background:var(--bg);border-radius:10px;padding:10px;overflow:auto;max-height:260px;margin:8px 0 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
+footer{color:var(--muted);font-size:12.5px;text-align:center}
+.num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:14px;margin-right:10px}
+.wrapseg{flex-wrap:wrap;max-width:100%}
+.btn.big{font-size:17px;padding:14px 26px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">fair<b>slot</b></div>
+  <span class="pill" id="modePill"></span>
+  <span class="spacer"></span>
+  <div class="seg small" id="langSeg" role="tablist" aria-label="Language"><button data-lang="ru" aria-selected="true">RU</button><button data-lang="en" aria-selected="false">EN</button></div>
+</header>
+
+<div class="seg tabs" id="tabs" role="tablist">
+  <button data-tab="setup" aria-selected="true" data-i18n="tab_setup">Розыгрыш</button>
+  <button data-tab="result" aria-selected="false" data-i18n="tab_result">Результат</button>
+  <button data-tab="verify" aria-selected="false" data-i18n="tab_verify">Проверка</button>
+</div>
+
+<section id="p-setup" class="stack">
+  <!-- STEP 1 -->
+  <div class="card">
+    <h2><span class="num">1</span><span data-i18n="s1">Откуда заявки</span></h2>
+    <div class="seg wrapseg" id="srcSeg" role="tablist"></div>
+    <div id="srcBody" class="stack" style="gap:12px">
+      <div class="field" data-src="google_sheet ics_url csv_url"><label for="srcUrl" id="srcUrlLbl"></label><input type="text" id="srcUrl" placeholder="https://"></div>
+      <div class="field" data-src="calendly"><label for="srcToken" data-i18n="token">Токен Calendly</label><input type="password" id="srcToken" autocomplete="off" placeholder=""><p class="hint" data-i18n="token_hint">Calendly → Integrations → API &amp; webhooks → Personal access tokens. Токен хранится только на этом компьютере и только читает записи.</p></div>
+      <div class="field" data-src="calendly ics_url"><label for="srcDays" data-i18n="days">Сколько дней вперёд брать</label><input type="number" id="srcDays" min="1" max="60" value="7"></div>
+      <p class="hint" data-src="manual" data-i18n="manual_hint">Вставь таблицы ниже, перетащи файлы на поля или нажми «Загрузить пример».</p>
+      <div class="row" data-src="google_sheet ics_url csv_url calendly">
+        <button class="btn ghost" id="fetchBtn" data-i18n="fetch">Загрузить заявки</button>
+        <span class="hint" id="fetchStatus"></span>
+      </div>
+      <div class="msg warn" id="needApp" hidden></div>
+      <div class="msg bad" id="fetchErr" hidden></div>
+      <div class="msg warn" id="fetchWarn" hidden></div>
+    </div>
+    <details id="tablesBox"><summary data-i18n="tables">Таблицы (слоты, заявки, участники)</summary>
+      <div class="row" style="margin:8px 0"><button class="btn ghost small" id="loadEx" data-i18n="example">Загрузить пример</button></div>
+      <p class="hint" data-i18n="data_hint">Формат CSV. Несколько значений в одной ячейке разделяй знаком | или ;</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:10px">
+        <div class="field"><label for="tSlots"><span data-i18n="slots">Слоты</span> <span class="tag ok" id="cSlots"></span></label><textarea id="tSlots" spellcheck="false" data-drop></textarea></div>
+        <div class="field"><label for="tApps"><span data-i18n="apps">Заявки</span> <span class="tag ok" id="cApps"></span></label><textarea id="tApps" spellcheck="false" data-drop></textarea></div>
+        <div class="field"><label for="tMem"><span data-i18n="members">Участники и уровни</span> <span class="tag ok" id="cMem"></span></label><textarea id="tMem" spellcheck="false" data-drop></textarea></div>
+        <div class="field"><label for="tHist"><span data-i18n="history">История (необязательно)</span> <span class="tag ok" id="cHist"></span></label><textarea id="tHist" spellcheck="false" data-drop></textarea></div>
+      </div>
+    </details>
+    <details><summary data-i18n="roster">Список участников с уровнями (необязательно)</summary>
+      <div class="field" style="margin-top:8px"><label for="rosterUrl" data-i18n="roster_url">Ссылка на таблицу: id или email, уровень, имя</label><input type="text" id="rosterUrl" placeholder="https://"></div>
+    </details>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <h2><span class="num">2</span><span data-i18n="s2">Правила</span></h2>
+    <div class="field"><label for="preset" data-i18n="preset">Готовый профиль</label><select id="preset"></select></div>
+    <div class="about" id="presetAbout"></div>
+    <div class="msg bad" id="profErr" hidden></div>
+    <details><summary data-i18n="detail">Настроить подробно</summary>
+      <div class="grid" id="profForm" style="margin-top:10px"></div>
+      <details style="margin-top:10px"><summary data-i18n="adv">Профиль целиком (JSON)</summary>
+        <p class="hint" data-i18n="adv_hint">Можно скопировать, сохранить в файл и использовать в командной строке. Изменения применяются, когда уберёшь курсор.</p>
+        <textarea id="profJson" spellcheck="false" style="min-height:220px"></textarea>
+      </details>
+    </details>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card">
+    <h2><span class="num">3</span><span data-i18n="s3">Розыгрыш</span></h2>
+    <div class="row"><button class="btn big" id="runBtn"></button><span class="hint" id="runErr"></span></div>
+    <details><summary data-i18n="more">Дополнительно</summary>
+      <div class="grid" style="margin-top:10px">
+        <div class="field"><label for="seedMode" data-i18n="seed_mode">Зерно</label><select id="seedMode"><option value="auto" data-i18n="seed_auto">Автоматически из списка заявок (рекомендуется)</option><option value="manual" data-i18n="seed_manual">Своё, объявленное заранее</option></select></div>
+        <div class="field" id="seedBox" hidden><label for="seed" data-i18n="seed">Публичное зерно</label><input type="text" id="seed" value=""></div>
+        <div class="field"><label for="now" data-i18n="now">Время розыгрыша (пусто = сейчас)</label><input type="text" id="now" placeholder="2026-11-19T12:00"></div>
+        <div class="field"><label for="utc" data-i18n="utc">Часовой пояс источника (UTC+)</label><input type="number" id="utc" step="0.5" value="4"></div>
+        <div class="field" style="grid-column:1/-1"><label for="tpl" data-i18n="tpl">Шаблон ссылки на бронь (необязательно)</label><input type="text" id="tpl" placeholder="https://calendly.com/you/court?date={date}&amp;time={time}&amp;name={owner}"></div>
+      </div>
+      <p class="hint" data-i18n="seed_hint">Автозерно считается из списка заявок и времени: любой может пересчитать его и убедиться, что список не подгоняли.</p>
+    </details>
+  </div>
+</section>
+
+<section id="p-result" class="stack" hidden>
+  <div class="card" id="resEmpty"><p class="hint" data-i18n="no_result">Розыгрыша ещё не было.</p></div>
+  <div id="resBody" class="stack" hidden>
+    <div class="card"><div class="stats" id="stats"></div><div class="legend" id="legend"></div></div>
+    <div class="card">
+      <div class="row"><h2 data-i18n="announce">Объявление</h2><span class="spacer"></span><button class="btn small" id="cpAnn" data-i18n="copy_ann">Копировать объявление</button></div>
+      <textarea id="annText" spellcheck="false" style="min-height:160px;white-space:pre-wrap;font-family:var(--sans);font-size:14px"></textarea>
+      <div class="row"><button class="btn ghost small" id="dlJson" data-i18n="download">Скачать result.json</button><button class="btn ghost small" id="cpJson" data-i18n="copy">Копировать JSON</button><span class="hint" id="pubMsg"></span></div>
+      <p class="hint" data-i18n="publish_hint">Опубликуй объявление и файл result.json. Любой проверит розыгрыш на вкладке «Проверка».</p>
+    </div>
+    <div id="slotsOut" class="stack" style="gap:12px"></div>
+    <div class="card" id="extra"></div>
+  </div>
+</section>
+
+<section id="p-verify" class="stack" hidden>
+  <div class="card">
+    <h2 data-i18n="ver_title">Проверить опубликованный розыгрыш</h2>
+    <p class="hint" data-i18n="ver_hint">Вставь содержимое result.json или перетащи файл.</p>
+    <textarea id="vText" spellcheck="false" data-drop style="min-height:200px"></textarea>
+    <div class="row"><button class="btn" id="vBtn" data-i18n="ver_btn">Проверить</button><button class="btn ghost small" id="vCur" data-i18n="ver_cur">Взять текущий результат</button></div>
+    <div id="vOut"></div>
+  </div>
+</section>
+
+<footer><span data-i18n="foot">Открытый код, MIT.</span></footer>
+</div>
+<script>
+/*ENGINE*/
+const FS = (() => {
+  const DEFAULTS = {
+    order: "weighted_random", draw_hours_before: 72, seats_per_slot: 4,
+    team: {max_size: 4, allow_open_seats: true, avoid_lists: true, want_lists: true},
+    levels: {names: ["beginner", "intermediate", "advanced"], policy: "adjacent", max_gap: 1},
+    caps: {per_day: 1, per_week: 3, max_applications_week: 3},
+    weights: {base: 1.0, recent_win_penalty: 0.5, loss_streak_boost: 0.25, min: 0.2, max: 4.0, window_days: 28},
+    substitution: {policy: "owner_picks", change_deadline_hours: 3, late_release_hours: 6, market_requires_level_fit: true},
+    waitlist: "opt_in"
+  };
+  const PRESETS = {
+    strict_lottery: {order: "weighted_random", draw_hours_before: 72, team: {max_size: 4}, levels: {policy: "adjacent"}, substitution: {policy: "waitlist_opt_in"}, waitlist: "opt_in"},
+    late_lottery: {order: "weighted_random", draw_hours_before: 12, substitution: {policy: "owner_picks", change_deadline_hours: 2, late_release_hours: 6}},
+    owner_controlled: {order: "weighted_random", draw_hours_before: 48, substitution: {policy: "owner_picks", change_deadline_hours: 3}, waitlist: "none"},
+    level_pools: {order: "weighted_random", draw_hours_before: 48, levels: {policy: "same"}, substitution: {policy: "owner_picks"}},
+    fair_queue: {order: "priority_fifo", draw_hours_before: 48, substitution: {policy: "owner_picks"}},
+    hybrid_market: {order: "weighted_random", draw_hours_before: 24, team: {max_size: 4, allow_open_seats: true}, substitution: {policy: "owner_picks", late_release_hours: 8, change_deadline_hours: 2}},
+    individual_only: {order: "weighted_random", draw_hours_before: 72, team: {max_size: 1, avoid_lists: false, want_lists: false}, levels: {policy: "any"}, substitution: {policy: "waitlist_auto"}, waitlist: "auto"}
+  };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  function merge(base, over) {
+    const out = clone(base);
+    for (const k of Object.keys(over || {})) {
+      const v = over[k];
+      if (v && typeof v === "object" && !Array.isArray(v) && out[k] && typeof out[k] === "object" && !Array.isArray(out[k])) out[k] = merge(out[k], v);
+      else out[k] = v;
+    }
+    return out;
+  }
+  function validate(cfg) {
+    const e = [];
+    if (!["weighted_random", "priority_fifo"].includes(cfg.order)) e.push("order must be weighted_random or priority_fifo");
+    if (!["any", "adjacent", "same"].includes(cfg.levels.policy)) e.push("levels.policy must be any|adjacent|same");
+    if (!Number.isInteger(cfg.levels.max_gap) || cfg.levels.max_gap < 0) e.push("levels.max_gap must be a whole number >= 0");
+    if (new Set(cfg.levels.names).size !== cfg.levels.names.length) e.push("levels.names must be unique");
+    if (!["owner_picks", "waitlist_opt_in", "waitlist_auto", "none"].includes(cfg.substitution.policy)) e.push("substitution.policy invalid");
+    if (!["none", "opt_in", "auto"].includes(cfg.waitlist)) e.push("waitlist invalid");
+    if (!(cfg.team.max_size >= 1 && cfg.team.max_size <= cfg.seats_per_slot)) e.push("team.max_size must be between 1 and seats_per_slot");
+    if (!(cfg.weights.min > 0 && cfg.weights.min <= cfg.weights.max)) e.push("weights.min must be >0 and <= weights.max");
+    if (e.length) throw new Error(e.join("; "));
+    return cfg;
+  }
+  const load = p => validate(merge(DEFAULTS, typeof p === "string" ? (PRESETS[p] || {}) : (p || {})));
+
+  // ---- SHA-256 (self-contained, so the page works from a file:// URL with no crypto API)
+  const K = [], H0 = [];
+  (function () {
+    const primes = []; for (let n = 2; primes.length < 64; n++) { if (primes.every(p => n % p)) primes.push(n); }
+    const fr = x => Math.floor((x - Math.floor(x)) * 4294967296) >>> 0;
+    primes.forEach((p, i) => { K[i] = fr(Math.cbrt(p)); if (i < 8) H0[i] = fr(Math.sqrt(p)); });
+  })();
+  function sha256(bytes) {
+    const l = bytes.length, total = (((l + 9 + 63) >> 6) << 6), buf = new Uint8Array(total);
+    buf.set(bytes); buf[l] = 0x80;
+    const dv = new DataView(buf.buffer); dv.setUint32(total - 8, Math.floor(l * 8 / 4294967296)); dv.setUint32(total - 4, (l * 8) >>> 0);
+    const h = H0.slice(), w = new Uint32Array(64), rot = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let o = 0; o < total; o += 64) {
+      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+      for (let i = 16; i < 64; i++) { const s0 = rot(w[i - 15], 7) ^ rot(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = rot(w[i - 2], 17) ^ rot(w[i - 2], 19) ^ (w[i - 2] >>> 10); w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0; }
+      let [a, b, c, d, e, f, g, hh] = h;
+      for (let i = 0; i < 64; i++) {
+        const S1 = rot(e, 6) ^ rot(e, 11) ^ rot(e, 25), ch = (e & f) ^ (~e & g), t1 = (hh + S1 + ch + K[i] + w[i]) >>> 0;
+        const S0 = rot(a, 2) ^ rot(a, 13) ^ rot(a, 22), mj = (a & b) ^ (a & c) ^ (b & c), t2 = (S0 + mj) >>> 0;
+        hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      h[0] = (h[0] + a) >>> 0; h[1] = (h[1] + b) >>> 0; h[2] = (h[2] + c) >>> 0; h[3] = (h[3] + d) >>> 0;
+      h[4] = (h[4] + e) >>> 0; h[5] = (h[5] + f) >>> 0; h[6] = (h[6] + g) >>> 0; h[7] = (h[7] + hh) >>> 0;
+    }
+    const out = new Uint8Array(32), odv = new DataView(out.buffer); h.forEach((x, i) => odv.setUint32(i * 4, x)); return out;
+  }
+  const utf8 = s => new TextEncoder().encode(s);
+  const hex = u8 => Array.from(u8, b => b.toString(16).padStart(2, "0")).join("");
+  function drawKey(seed, slotId, appId, weight) {
+    const d = sha256(utf8(`${seed}|${slotId}|${appId}`));
+    const dv = new DataView(d.buffer);
+    const x = dv.getUint32(0) * 4294967296 + dv.getUint32(4);
+    return Math.pow((x + 1) / 18446744073709551617, 1 / weight);
+  }
+
+  // ---- time helpers (wall-clock, no time zones, same as the Python version)
+  function dt(s) {
+    if (typeof s === "number") return s;
+    const m = String(s).trim().replace(" ", "T").match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (!m) throw new Error("bad date: " + s);
+    return Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  }
+  const dayKey = ms => new Date(ms).toISOString().slice(0, 10);
+  function weekKey(ms) {
+    const d = new Date(ms); const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const n = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - n);
+    const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return t.getUTCFullYear() + "-" + Math.ceil(((t - y0) / 86400000 + 1) / 7);
+  }
+  const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  const HOUR = 3600000;
+
+  function memberWeight(cfg, member, history, nowMs) {
+    const w = cfg.weights, start = nowMs - w.window_days * 86400000;
+    const mine = history.filter(h => h.member === member).sort((a, b) => cmp(a.start, b.start));
+    const recent = mine.filter(h => (h.result === "won" || h.result === "played") && dt(h.start) >= start).length;
+    let streak = 0;
+    for (let i = mine.length - 1; i >= 0 && mine[i].result === "lost"; i--) streak++;
+    const val = w.base / (1 + w.recent_win_penalty * recent) * (1 + w.loss_streak_boost * streak);
+    return Math.max(w.min, Math.min(w.max, val));
+  }
+  function levelsOk(cfg, members, ids) {
+    const pol = cfg.levels.policy; if (pol === "any") return true;
+    const names = cfg.levels.names, idx = [];
+    for (const m of ids) {
+      const lv = (members[m] || {}).level, i = names.indexOf(lv);
+      if (i < 0) return pol !== "same";
+      idx.push(i);
+    }
+    const spread = idx.length ? Math.max(...idx) - Math.min(...idx) : 0;
+    return spread <= (pol === "same" ? 0 : (cfg.levels.max_gap == null ? 1 : cfg.levels.max_gap));
+  }
+  function poolOk(slot, members, ids) {
+    const pool = slot.levels; return !pool || !pool.length || ids.every(m => pool.includes((members[m] || {}).level));
+  }
+
+  function run(cfg, slots, applications, members, history, seed, now) {
+    history = history || []; seed = seed == null ? "" : String(seed);
+    slots = slots.slice().sort((a, b) => cmp(a.start, b.start) || cmp(a.id, b.id));
+    const slotBy = {}; slots.forEach(s => slotBy[s.id] = s);
+    const nowMs = now ? dt(now) : (slots.length ? dt(slots[0].start) : Date.now());
+    const caps = cfg.caps, team = cfg.team, rejected = [], notDue = [];
+    const dayN = {}, weekN = {};
+    const bump = (m, start) => { const ms = dt(start), a = m + "|" + dayKey(ms), b = m + "|" + weekKey(ms); dayN[a] = (dayN[a] || 0) + 1; weekN[b] = (weekN[b] || 0) + 1; };
+    history.forEach(h => { if (h.result === "won" || h.result === "played") bump(h.member, h.start); });
+
+    const apps = [], perWeek = {};
+    const sortedIn = applications.slice().sort((a, b) => cmp(a.ts || "", b.ts || "") || cmp(a.id, b.id));
+    for (const a0 of sortedIn) {
+      const a = Object.assign({members: [a0.member], open: false, avoid: [], want: []}, a0);
+      const s = slotBy[a.slot];
+      if (!s) { rejected.push({app: a.id, reason: "unknown slot"}); continue; }
+      if (a.members.length > team.max_size) { rejected.push({app: a.id, reason: "team too large"}); continue; }
+      if (new Set(a.members).size !== a.members.length) { rejected.push({app: a.id, reason: "duplicate member"}); continue; }
+      if (!team.avoid_lists) a.avoid = []; if (!team.want_lists) a.want = []; if (!team.allow_open_seats) a.open = false;
+      if (!poolOk(s, members, a.members)) { rejected.push({app: a.id, reason: "level pool"}); continue; }
+      const wk = weekKey(dt(s.start)); let over = false;
+      for (const m of a.members) { const k = m + "|" + wk; perWeek[k] = (perWeek[k] || 0) + 1; if (perWeek[k] > caps.max_applications_week) over = true; }
+      if (over) { rejected.push({app: a.id, reason: "too many applications this week"}); continue; }
+      apps.push(a);
+    }
+    const wc = {};
+    const weight = a => { if (!(a.id in wc)) { const ws = a.members.map(m => memberWeight(cfg, m, history, nowMs)); wc[a.id] = ws.reduce((x, y) => x + y, 0) / ws.length; } return wc[a.id]; };
+    const canPlay = (m, start) => { const ms = dt(start); return (dayN[m + "|" + dayKey(ms)] || 0) < caps.per_day && (weekN[m + "|" + weekKey(ms)] || 0) < caps.per_week; };
+
+    const allocations = [], waitlist = {}, auditSlots = {}, allocated = new Set(), horizon = cfg.draw_hours_before * HOUR;
+    for (const s of slots) {
+      if (dt(s.start) - nowMs > horizon) { notDue.push(s.id); continue; }
+      const elig = apps.filter(a => a.slot === s.id && !allocated.has(a.id) && a.members.every(m => canPlay(m, s.start)));
+      let keyed;
+      if (cfg.order === "weighted_random") {
+        keyed = elig.map(a => [drawKey(seed, s.id, a.id, weight(a)), a]);
+        keyed.sort((x, y) => (y[0] - x[0]) || cmp(x[1].id, y[1].id));
+      } else {
+        keyed = elig.slice().sort((a, b) => (weight(b) - weight(a)) || cmp(a.ts || "", b.ts || "") || cmp(a.id, b.id)).map(a => [0.0, a]);
+      }
+      auditSlots[s.id] = keyed.map(([k, a]) => ({app: a.id, weight: weight(a), key: k}));
+      if (!keyed.length) continue;
+      const win = keyed[0][1];
+      let group = win.members.slice(); const groupApps = [win.id], avoid = new Set(win.avoid);
+      allocated.add(win.id);
+      if (win.open) {
+        const liked = a => a.members.some(m => win.want.includes(m)) || a.want.some(m => group.includes(m));
+        const rest = keyed.slice(1).map((it, i) => ({k: it[0], a: it[1], i}));
+        rest.sort((x, y) => {
+          const lx = liked(x.a) ? 0 : 1, ly = liked(y.a) ? 0 : 1;
+          if (lx !== ly) return lx - ly;
+          return cfg.order === "weighted_random" ? (y.k - x.k) || (x.i - y.i) : x.i - y.i;
+        });
+        for (const {a} of rest) {
+          if (group.length >= cfg.seats_per_slot || !a.open) continue;
+          if (group.length + a.members.length > cfg.seats_per_slot || a.members.some(m => group.includes(m))) continue;
+          if (a.members.some(m => avoid.has(m)) || a.avoid.some(m => group.includes(m))) continue;
+          if (!levelsOk(cfg, members, group.concat(a.members))) continue;
+          group = group.concat(a.members); groupApps.push(a.id); a.avoid.forEach(m => avoid.add(m)); allocated.add(a.id);
+        }
+      }
+      group.forEach(m => bump(m, s.start));
+      allocations.push({slot: s.id, members: group, apps: groupApps, owner_app: win.id, avoid: Array.from(avoid).sort(), open_seats: win.open ? cfg.seats_per_slot - group.length : 0});
+      waitlist[s.id] = cfg.waitlist !== "none" ? keyed.filter(([k, a]) => !allocated.has(a.id)).map(([k, a]) => a.id) : [];
+    }
+    return {allocations, waitlist, rejected, not_due: notDue,
+      audit: {seed, now: new Date(nowMs).toISOString().slice(0, 16), order: cfg.order, engine: "fairslot-js-0.1", slots: auditSlots}};
+  }
+
+  function verify(result) {
+    const a = result && result.audit;
+    if (!a || !a.slots || !result.allocations) return [false, "not a fairslot result file"];
+    if (a.order !== "weighted_random") return [true, "priority order has no randomness to verify"];
+    for (const [slotId, rows] of Object.entries(a.slots)) {
+      for (const r of rows) if (Math.abs(drawKey(a.seed, slotId, r.app, r.weight) - r.key) > 1e-9) return [false, `key mismatch for ${r.app} on ${slotId}`];
+      for (let i = 1; i < rows.length; i++) if (rows[i].key > rows[i - 1].key) return [false, `order of ${slotId} is not sorted by key`];
+    }
+    for (const al of result.allocations) { const rows = a.slots[al.slot] || []; if (rows.length && rows[0].app !== al.owner_app) return [false, `winner of ${al.slot} is not the top key`]; }
+    return [true, "ok"];
+  }
+
+  // ---- CSV
+  function parseCsv(text) {
+    text = String(text || "").replace(/^﻿/, "").replace(/\r\n?/g, "\n").trim();
+    if (!text) return [];
+    const first = text.split("\n")[0];
+    const delim = (first.split(";").length > first.split(",").length) ? ";" : (first.includes("\t") ? "\t" : ",");
+    const rows = []; let row = [], cell = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === delim) { row.push(cell); cell = ""; }
+      else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    row.push(cell); rows.push(row);
+    const head = rows[0].map(h => h.trim().toLowerCase());
+    return rows.slice(1).filter(r => r.some(x => x.trim())).map(r => { const o = {}; head.forEach((h, i) => o[h] = (r[i] || "").trim()); return o; });
+  }
+  const list = v => String(v || "").split(/[;|,]/).map(x => x.trim()).filter(Boolean);
+  const bool = v => ["1", "true", "yes", "y", "да"].includes(String(v || "").trim().toLowerCase());
+  const readSlots = t => parseCsv(t).map(r => { const s = {id: r.id, start: r.start, end: r.end || "", resource: r.resource || ""}; if (r.levels) s.levels = list(r.levels); return s; });
+  const readMembers = t => { const o = {}; parseCsv(t).forEach(r => o[r.id] = {level: r.level || "", name: r.name || ""}); return o; };
+  const readApps = t => parseCsv(t).map(r => ({id: r.id, slot: r.slot, members: list(r.members), open: bool(r.open), avoid: list(r.avoid), want: list(r.want), ts: r.ts || ""}));
+  const readHistory = t => parseCsv(t).map(r => ({member: r.member, start: r.start, result: r.result}));
+
+  function autoSeed(apps, slots, now) {
+    const lines = apps.map(a => `${a.id}|${a.slot}|${a.members.slice().sort(cmp).join(",")}|${a.open ? "1" : "0"}|${a.ts || ""}`).sort(cmp)
+      .concat(slots.map(s => `S|${s.id}|${s.start}`).sort(cmp));
+    return "auto-" + hex(sha256(utf8(lines.join("\n") + "\nT|" + now))).slice(0, 16);
+  }
+  return {autoSeed, DEFAULTS, PRESETS, load, validate, merge, run, verify, drawKey, sha256, hex, utf8, parseCsv, readSlots, readMembers, readApps, readHistory, dt};
+})();
+/*END-ENGINE*/
+/* ================= UI ================= */
+const APP = window.FS_APP || null; // present only when opened through `python -m fairslot app`
+const T = {
+  ru: {
+    pill_off: "Работает офлайн", pill_app: "Приложение: автозагрузка включена",
+    tab_setup: "Розыгрыш", tab_result: "Результат", tab_verify: "Проверка",
+    s1: "Откуда заявки", s2: "Правила", s3: "Розыгрыш",
+    src_manual: "Вставить или файл", src_google_sheet: "Google Таблица", src_ics_url: "Календарь (.ics)", src_calendly: "Calendly", src_csv_url: "Ссылка CSV или JSON",
+    url_google_sheet: "Ссылка на Google Таблицу (доступ «всем, у кого есть ссылка»)", url_ics_url: "Ссылка на календарь (.ics: Google, Outlook, Apple, Cal.com)", url_csv_url: "Ссылка на CSV или JSON",
+    token: "Токен Calendly", token_hint: "Calendly → Integrations → API & webhooks → Personal access tokens. Токен хранится только на этом компьютере и только читает записи.", token_saved: "сохранён, оставь пустым",
+    days: "Сколько дней вперёд брать", manual_hint: "Вставь таблицы ниже, перетащи файлы на поля или нажми «Загрузить пример».",
+    fetch: "Загрузить заявки", loading: "Загружаю…", loaded: (a, s) => `Загружено: заявок ${a}, слотов ${s}`,
+    need_app: "Автозагрузка работает в приложении. Запусти в терминале команду: python -m fairslot app (нужен только Python). Без неё вставляй таблицы вручную.",
+    tables: "Таблицы (слоты, заявки, участники)", example: "Загрузить пример", data_hint: "Формат CSV. Несколько значений в одной ячейке разделяй знаком | или ;",
+    slots: "Слоты", apps: "Заявки", members: "Участники и уровни", history: "История (необязательно)",
+    roster: "Список участников с уровнями (необязательно)", roster_url: "Ссылка на таблицу: id или email, уровень, имя",
+    preset: "Готовый профиль", detail: "Настроить подробно", adv: "Профиль целиком (JSON)",
+    adv_hint: "Можно скопировать, сохранить в файл и использовать в командной строке. Изменения применяются, когда уберёшь курсор.",
+    run: "Провести розыгрыш", run_fetch: "Загрузить заявки и провести розыгрыш", more: "Дополнительно",
+    seed_mode: "Зерно", seed_auto: "Автоматически из списка заявок (рекомендуется)", seed_manual: "Своё, объявленное заранее", seed: "Публичное зерно",
+    now: "Время розыгрыша (пусто = сейчас)", utc: "Часовой пояс источника (UTC+)", tpl: "Шаблон ссылки на бронь (необязательно)",
+    seed_hint: "Автозерно считается из списка заявок и времени: любой может пересчитать его и убедиться, что список не подгоняли.",
+    no_result: "Розыгрыша ещё не было. Нажми «Провести розыгрыш» на первой вкладке.",
+    announce: "Объявление", copy_ann: "Копировать объявление", download: "Скачать result.json", copy: "Копировать JSON", copy_link: "Копировать ссылку",
+    publish_hint: "Опубликуй объявление и файл result.json. Любой проверит розыгрыш на вкладке «Проверка».",
+    ver_title: "Проверить опубликованный розыгрыш", ver_hint: "Вставь содержимое result.json или перетащи файл. Страница заново посчитает все ключи по зерну и проверит порядок и победителей.",
+    ver_btn: "Проверить", ver_cur: "Взять текущий результат", foot: "Открытый код, MIT. Без автозагрузки страница работает без интернета и ничего никуда не отправляет.",
+    f_order: "Порядок", o_weighted_random: "Жеребьёвка по зерну (проверяемая)", o_priority_fifo: "Очередь без случайности",
+    f_hours: "Розыгрыш за N часов до игры", f_seats: "Мест в слоте", f_team: "Макс. размер команды",
+    f_open: "Команда может открыть свободные места", f_avoid: "Списки «не ставить меня с…»", f_want: "Списки «хочу играть с…»",
+    f_levels: "Уровни в группе", l_any: "Не учитывать", l_adjacent: "Не дальше допустимого разрыва", l_same: "Только одинаковые",
+    f_gap: "Допустимый разрыв уровней (шагов)", f_names: "Уровни от слабого к сильному (через запятую)",
+    f_day: "Игр в день", f_week: "Игр в неделю", f_apps: "Заявок в неделю", f_pen: "Штраф за недавние победы", f_boost: "Бонус за серию неудач",
+    f_sub: "Замена игрока", s_owner_picks: "Хозяин слота называет замену", s_waitlist_opt_in: "Из листа ожидания, группа согласна", s_waitlist_auto: "Из листа ожидания автоматически", s_none: "Без замен",
+    f_freeze: "Состав заморожен за N часов", f_market: "Свободные места на рынок за N часов", f_wait: "Лист ожидания", w_none: "Нет", w_opt_in: "По желанию", w_auto: "Автоматически",
+    presets: {strict_lottery: "Строгая лотерея", late_lottery: "Поздний розыгрыш", owner_controlled: "Слот под контролем хозяина", level_pools: "Строгие уровни", fair_queue: "Честная очередь", hybrid_market: "Розыгрыш + рынок мест", individual_only: "Только одиночные заявки", custom: "Свои настройки"},
+    about: {strict_lottery: "Розыгрыш за 72 часа, сначала команды, потом свободные места добираются. Классический вариант, но нужно знать планы за три дня.",
+      late_lottery: "Розыгрыш за 12 часов до игры: не надо планировать на три дня вперёд. Состав замораживается за 2 часа.",
+      owner_controlled: "Победитель сам называет замену, чужих из листа ожидания никому не навязывают. Уровни и списки «не ставить» всё равно работают.",
+      level_pools: "В группу добавляются только игроки одного уровня. Подходит, если новички и сильные не должны играть вместе.",
+      fair_queue: "Без случайности: выше те, кто играл меньше, при равенстве решает время заявки. Легко объяснить, легко проверить.",
+      hybrid_market: "Розыгрыш за сутки, а свободные места и отказы за 8 часов уходят на рынок «кто первый», как люди и так делятся в чате.",
+      individual_only: "Каждый подаётся сам, без команд и предпочтений. Для случаев, где все друг другу незнакомы.",
+      custom: "Профиль изменён вручную."},
+    st_groups: "групп сыграет", st_people: "человек получили места", st_open: "свободных мест", st_rej: "заявок отклонено", st_wait: "в листах ожидания", st_due: "слотов ещё рано разыгрывать",
+    owner: "хозяин слота", free: "свободно", nobody: "На этот слот нет подходящих заявок", waitlist: "Лист ожидания", level: {},
+    copied: "Скопировано", copy_fail: "Не удалось скопировать, выдели текст вручную", open_note: "Свободные места уходят на рынок «кто первый» перед игрой.",
+    rej_title: "Отклонённые заявки", reasons: {"unknown slot": "нет такого слота", "team too large": "команда больше допустимой", "duplicate member": "игрок указан дважды", "level pool": "уровень не подходит слоту", "too many applications this week": "больше заявок в неделю, чем разрешено"},
+    err_data: "Проверь данные: ", ok_ver: "Розыгрыш проверен: все ключи пересчитаны, порядок и победители совпадают.", bad_ver: "Проверка не пройдена: ", empty: "Нет данных", not_json: "Это не JSON",
+    rows: n => n + " строк", saved: "Готово, файл сохранён в загрузках", sub_note: "Правило замен: ", no_seed: "Введи зерно или выбери автоматическое",
+    no_levels: "У участников нет уровней, а правило уровней включено: группы из незнакомых не добираются. Добавь уровни или выбери «Не учитывать».",
+    ann_head: "Результат розыгрыша", ann_holder: "держит слот", ann_free: "свободно мест", ann_seed: "Зерно", ann_verify: "Проверка: страница fairslot, вкладка «Проверка», файл result.json",
+    ann_mon: ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]
+  },
+  en: {
+    pill_off: "Works offline", pill_app: "App: auto-loading on",
+    tab_setup: "Draw", tab_result: "Result", tab_verify: "Verify",
+    s1: "Where the applications are", s2: "Rules", s3: "Draw",
+    src_manual: "Paste or file", src_google_sheet: "Google Sheet", src_ics_url: "Calendar (.ics)", src_calendly: "Calendly", src_csv_url: "CSV or JSON link",
+    url_google_sheet: "Google Sheet link (shared with “anyone with the link”)", url_ics_url: "Calendar link (.ics: Google, Outlook, Apple, Cal.com)", url_csv_url: "CSV or JSON link",
+    token: "Calendly token", token_hint: "Calendly → Integrations → API & webhooks → Personal access tokens. The token stays on this computer and only reads bookings.", token_saved: "saved, leave empty",
+    days: "How many days ahead", manual_hint: "Paste the tables below, drop files on the boxes or press “Load example”.",
+    fetch: "Load applications", loading: "Loading…", loaded: (a, s) => `Loaded: ${a} applications, ${s} slots`,
+    need_app: "Auto-loading works in the app. Run in a terminal: python -m fairslot app (only Python is needed). Otherwise paste the tables by hand.",
+    tables: "Tables (slots, applications, members)", example: "Load example", data_hint: "CSV format. Separate several values in one cell with | or ;",
+    slots: "Slots", apps: "Applications", members: "Members and levels", history: "History (optional)",
+    roster: "Member list with levels (optional)", roster_url: "Link to a table: id or email, level, name",
+    preset: "Ready-made profile", detail: "Fine-tune", adv: "Whole profile (JSON)",
+    adv_hint: "Copy it, save it to a file and use it on the command line. Changes apply when you leave the field.",
+    run: "Run the draw", run_fetch: "Load applications and run the draw", more: "More",
+    seed_mode: "Seed", seed_auto: "Automatic, from the application list (recommended)", seed_manual: "Own, announced in advance", seed: "Public seed",
+    now: "Draw time (empty = now)", utc: "Source time zone (UTC+)", tpl: "Booking link template (optional)",
+    seed_hint: "The automatic seed is computed from the application list and the time: anyone can recompute it and see the list was not tuned.",
+    no_result: "No draw yet. Press “Run the draw” on the first tab.",
+    announce: "Announcement", copy_ann: "Copy announcement", download: "Download result.json", copy: "Copy JSON", copy_link: "Copy link",
+    publish_hint: "Publish the announcement and result.json. Anyone can verify the draw on the Verify tab.",
+    ver_title: "Verify a published draw", ver_hint: "Paste the content of result.json or drop the file. The page recomputes every key from the seed and checks the order and the winners.",
+    ver_btn: "Verify", ver_cur: "Use current result", foot: "Open source, MIT. Without auto-loading the page works offline and sends nothing anywhere.",
+    f_order: "Order", o_weighted_random: "Seeded draw (verifiable)", o_priority_fifo: "Queue, no randomness",
+    f_hours: "Draw N hours before the game", f_seats: "Seats per slot", f_team: "Max team size",
+    f_open: "Teams may open free seats", f_avoid: "“Do not put me with…” lists", f_want: "“I want to play with…” lists",
+    f_levels: "Levels within a group", l_any: "Ignore", l_adjacent: "Within the allowed gap", l_same: "Same level only",
+    f_gap: "Allowed level gap (steps)", f_names: "Levels from weakest to strongest (comma separated)",
+    f_day: "Games per day", f_week: "Games per week", f_apps: "Applications per week", f_pen: "Penalty for recent wins", f_boost: "Bonus for a losing streak",
+    f_sub: "Replacing a player", s_owner_picks: "Slot holder names the replacement", s_waitlist_opt_in: "From the waitlist, group agrees", s_waitlist_auto: "From the waitlist automatically", s_none: "No replacements",
+    f_freeze: "Group frozen N hours before", f_market: "Open seats go to the market N hours before", f_wait: "Waitlist", w_none: "None", w_opt_in: "Opt-in", w_auto: "Automatic",
+    presets: {strict_lottery: "Strict lottery", late_lottery: "Late draw", owner_controlled: "Owner-controlled slot", level_pools: "Strict levels", fair_queue: "Fair queue", hybrid_market: "Draw + seat market", individual_only: "Individuals only", custom: "Custom settings"},
+    about: {strict_lottery: "Draw 72 hours ahead, teams first, open seats filled afterwards. The classic, but people must know their plans three days ahead.",
+      late_lottery: "Draw 12 hours before the game, so nobody plans three days ahead. The group freezes 2 hours before.",
+      owner_controlled: "The winner names any replacement; nobody gets a stranger from a waitlist. Levels and avoid lists still apply.",
+      level_pools: "Only players of one level are added to a group. For communities where beginners and strong players should not mix.",
+      fair_queue: "No randomness: people who played less go first, ties are broken by application time. Easy to explain and to audit.",
+      hybrid_market: "Draw a day ahead; open seats and cancellations go to a first-come market 8 hours before, like people already do in chat.",
+      individual_only: "Everyone applies alone, no teams or preferences. For places where everybody is a stranger anyway.",
+      custom: "The profile was changed by hand."},
+    st_groups: "groups will play", st_people: "people got seats", st_open: "open seats", st_rej: "applications rejected", st_wait: "on waitlists", st_due: "slots too early to draw",
+    owner: "slot holder", free: "free", nobody: "No eligible applications for this slot", waitlist: "Waitlist", level: {},
+    copied: "Copied", copy_fail: "Could not copy, select the text by hand", open_note: "Open seats go to a first-come market before the game.",
+    rej_title: "Rejected applications", reasons: {"unknown slot": "unknown slot", "team too large": "team larger than allowed", "duplicate member": "player listed twice", "level pool": "level does not fit the slot", "too many applications this week": "more applications per week than allowed"},
+    err_data: "Check the data: ", ok_ver: "Draw verified: every key recomputed, order and winners match.", bad_ver: "Verification failed: ", empty: "No data", not_json: "This is not JSON",
+    rows: n => n + " rows", saved: "Done, the file is in your downloads", sub_note: "Replacement rule: ", no_seed: "Enter a seed or choose the automatic one",
+    no_levels: "Members have no levels but the level rule is on: groups of strangers are not filled. Add levels or choose “Ignore”.",
+    ann_head: "Draw result", ann_holder: "holds the slot", ann_free: "free seats", ann_seed: "Seed", ann_verify: "Verify: fairslot page, Verify tab, file result.json",
+    ann_mon: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  }
+};
+const SRC_TYPES = ["manual", "google_sheet", "ics_url", "calendly", "csv_url"];
+let lang = "ru";
+try { const l = localStorage.getItem("fairslot-lang"); if (l === "en" || l === "ru") lang = l; } catch (e) {}
+const t = k => { const v = T[lang][k]; return v == null ? k : v; };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const LV9 = ["D-", "D", "D+", "D+Strong", "C-", "C-Strong", "C", "C+", "C+Strong"];
+
+const EX = {
+  slots: "id,start,end,resource,levels\nd1-1930-c1,2026-11-20T19:30,2026-11-20T21:00,court1,\nd1-1930-c2,2026-11-20T19:30,2026-11-20T21:00,court2,\nd1-2100-c1,2026-11-20T21:00,2026-11-20T22:30,court1,\n",
+  members: "id,level\nAnna,D\nBorys,D+\nCarla,D+Strong\nDavid,C\nEmma,C+\nFilip,D-\nGrace,D+\nHenk,C+Strong\nIvan,D\nJulia,C-\n",
+  apps: "id,slot,members,open,avoid,want,ts\na1,d1-1930-c1,Anna|Filip,yes,,,2026-11-18T09:00\na2,d1-1930-c1,Borys,yes,,Carla,2026-11-18T09:05\na3,d1-1930-c1,Carla,yes,,,2026-11-18T09:07\na4,d1-1930-c1,David|Emma,no,,,2026-11-18T10:00\na5,d1-1930-c1,Ivan,yes,Borys,,2026-11-18T11:30\na6,d1-1930-c2,Grace,yes,,,2026-11-18T12:00\na7,d1-1930-c2,Henk,yes,,,2026-11-18T12:10\na8,d1-1930-c2,Julia,yes,,Grace,2026-11-18T12:20\na9,d1-2100-c1,David|Emma|Henk,yes,,,2026-11-18T13:00\na10,d1-2100-c1,Borys,yes,,,2026-11-18T13:05\na11,d1-2100-c1,Julia,yes,,,2026-11-18T13:07\n",
+  hist: "member,start,result\nBorys,2026-11-12T20:00,lost\nBorys,2026-11-14T20:00,lost\nDavid,2026-11-13T20:00,won\nDavid,2026-11-15T20:00,won\nEmma,2026-11-15T20:00,won\n"
+};
+
+let cfg = FS.load(Object.assign({}, FS.PRESETS.owner_controlled, {levels: {names: LV9, policy: "adjacent", max_gap: 2}})), presetName = "owner_controlled";
+let srcType = "manual", lastResult = null, lastSlots = [], lastMembers = {}, lastApps = {}, lastNotes = [], tokenSaved = false;
+
+/* ---------- storage: workspace file via the helper, otherwise this browser ---------- */
+async function api(path, body) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json", "X-Fairslot-Token": APP.token}, body: JSON.stringify(body || {})});
+  return r.json();
+}
+function collect() {
+  const src = {type: srcType, url: $("srcUrl").value.trim(), token: $("srcToken").value.trim(), days_ahead: +$("srcDays").value || 7,
+    roster: $("rosterUrl").value.trim() ? {type: "csv_url", url: $("rosterUrl").value.trim()} : {}};
+  return {source: src, utc_offset: +$("utc").value || 0, profile: cfg, preset: presetName, link_template: $("tpl").value.trim(), seed_mode: $("seedMode").value, seed: $("seed").value.trim()};
+}
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const ws = collect();
+    if (APP) { api("/api/workspace/save", ws).catch(() => {}); }
+    else { try { const c = JSON.parse(JSON.stringify(ws)); c.source.token = ""; localStorage.setItem("fairslot-settings", JSON.stringify(c)); } catch (e) {} }
+  }, 400);
+}
+async function restore() {
+  let ws = null;
+  try { ws = APP ? await api("/api/workspace/get") : JSON.parse(localStorage.getItem("fairslot-settings") || "null"); } catch (e) {}
+  if (!ws || !ws.source) return;
+  try {
+    if (ws.profile) { cfg = FS.load(ws.profile); presetName = ws.preset && (FS.PRESETS[ws.preset] || ws.preset === "custom") ? ws.preset : "custom"; }
+    srcType = SRC_TYPES.includes(ws.source.type) || ws.source.type === "json_url" ? (ws.source.type === "json_url" ? "csv_url" : ws.source.type) : "manual";
+    $("srcUrl").value = ws.source.url || ""; $("srcDays").value = ws.source.days_ahead || 7; tokenSaved = !!ws.source.token_set;
+    $("rosterUrl").value = (ws.source.roster || {}).url || ""; $("utc").value = ws.utc_offset == null ? 4 : ws.utc_offset;
+    $("tpl").value = ws.link_template || ""; $("seedMode").value = ws.seed_mode || "auto"; $("seed").value = ws.seed || "";
+  } catch (e) {}
+}
+
+/* ---------- step 1: source ---------- */
+function renderSrc() {
+  $("srcSeg").innerHTML = SRC_TYPES.map(k => `<button data-src-btn="${k}" aria-selected="${k === srcType}">${esc(t("src_" + k))}</button>`).join("");
+  $("srcSeg").querySelectorAll("button").forEach(b => b.onclick = () => { srcType = b.dataset.srcBtn; renderSrc(); scheduleSave(); });
+  document.querySelectorAll("[data-src]").forEach(el => { el.hidden = !el.dataset.src.split(" ").includes(srcType); });
+  $("srcUrlLbl").textContent = t("url_" + srcType) || "";
+  $("srcToken").placeholder = tokenSaved ? t("token_saved") : "";
+  $("needApp").hidden = !(srcType !== "manual" && !APP); $("needApp").textContent = t("need_app");
+  $("fetchBtn").disabled = !APP;
+  $("runBtn").textContent = srcType !== "manual" && APP ? t("run_fetch") : t("run");
+  if (srcType === "manual") $("tablesBox").open = true;
+}
+async function doFetch() {
+  $("fetchErr").hidden = true; $("fetchWarn").hidden = true; $("fetchStatus").textContent = t("loading");
+  let res;
+  try { res = await api("/api/fetch", {source: collect().source}); } catch (e) { res = {error: String(e)}; }
+  $("fetchStatus").textContent = "";
+  if (res.error) { $("fetchErr").textContent = res.error; $("fetchErr").hidden = false; return false; }
+  $("tSlots").value = res.csv.slots; $("tApps").value = res.csv.apps; $("tMem").value = res.csv.members; countRows();
+  $("fetchStatus").textContent = t("loaded")(res.counts.applications, res.counts.slots);
+  if (res.warnings && res.warnings.length) { $("fetchWarn").innerHTML = res.warnings.map(esc).join("<br>"); $("fetchWarn").hidden = false; }
+  return true;
+}
+$("fetchBtn").addEventListener("click", doFetch);
+
+/* ---------- step 2: rules ---------- */
+const FIELDS = [
+  ["order", "f_order", "select", ["weighted_random", "priority_fifo"], "o_"],
+  ["draw_hours_before", "f_hours", "num"], ["seats_per_slot", "f_seats", "num"], ["team.max_size", "f_team", "num"],
+  ["team.allow_open_seats", "f_open", "bool"], ["team.avoid_lists", "f_avoid", "bool"], ["team.want_lists", "f_want", "bool"],
+  ["levels.policy", "f_levels", "select", ["any", "adjacent", "same"], "l_"],
+  ["levels.max_gap", "f_gap", "num"], ["levels.names", "f_names", "list"],
+  ["caps.per_day", "f_day", "num"], ["caps.per_week", "f_week", "num"], ["caps.max_applications_week", "f_apps", "num"],
+  ["weights.recent_win_penalty", "f_pen", "num", null, null, 0.05], ["weights.loss_streak_boost", "f_boost", "num", null, null, 0.05],
+  ["substitution.policy", "f_sub", "select", ["owner_picks", "waitlist_opt_in", "waitlist_auto", "none"], "s_"],
+  ["substitution.change_deadline_hours", "f_freeze", "num"], ["substitution.late_release_hours", "f_market", "num"],
+  ["waitlist", "f_wait", "select", ["none", "opt_in", "auto"], "w_"]
+];
+const getPath = (o, p) => p.split(".").reduce((x, k) => x[k], o);
+const setPath = (o, p, v) => { const ks = p.split("."); const last = ks.pop(); ks.reduce((x, k) => x[k], o)[last] = v; };
+function renderProfileForm() {
+  const g = $("profForm"); g.innerHTML = "";
+  for (const [path, lab, kind, opts, pre, step] of FIELDS) {
+    const id = "f_" + path.replace(/\./g, "_"), val = getPath(cfg, path), d = document.createElement("div");
+    if (kind === "list") {
+      d.className = "field"; d.style.gridColumn = "1 / -1";
+      d.innerHTML = `<label for="${id}">${esc(t(lab))}</label><input type="text" id="${id}" value="${esc(val.join(", "))}">`;
+    } else if (kind === "bool") {
+      d.className = "sw"; d.innerHTML = `<span>${esc(t(lab))}</span><input type="checkbox" id="${id}" ${val ? "checked" : ""}>`;
+    } else {
+      d.className = "field";
+      const ctl = kind === "select"
+        ? `<select id="${id}">${opts.map(o => `<option value="${o}" ${o === val ? "selected" : ""}>${esc(t(pre + o))}</option>`).join("")}</select>`
+        : `<input type="number" id="${id}" value="${val}" min="0" step="${step || 1}">`;
+      d.innerHTML = `<label for="${id}">${esc(t(lab))}</label>${ctl}`;
+    }
+    g.appendChild(d);
+    const el = d.querySelector("input,select");
+    el.addEventListener("change", () => {
+      const v = kind === "bool" ? el.checked : kind === "num" ? parseFloat(el.value) : kind === "list" ? el.value.split(",").map(x => x.trim()).filter(Boolean) : el.value;
+      const keep = JSON.parse(JSON.stringify(cfg)); setPath(cfg, path, v);
+      try { FS.validate(cfg); $("profErr").hidden = true; } catch (e) { cfg = keep; $("profErr").textContent = e.message; $("profErr").hidden = false; renderProfileForm(); return; }
+      presetName = "custom"; syncProfile(false); scheduleSave();
+    });
+  }
+}
+function renderPresets() {
+  const sel = $("preset"), names = Object.keys(FS.PRESETS).concat(["custom"]);
+  sel.innerHTML = names.map(n => `<option value="${n}" ${n === presetName ? "selected" : ""}>${esc(T[lang].presets[n])}</option>`).join("");
+  $("presetAbout").textContent = T[lang].about[presetName] || "";
+}
+function syncProfile(rebuildForm) {
+  renderPresets(); if (rebuildForm) renderProfileForm();
+  $("profJson").value = JSON.stringify(cfg, null, 2);
+}
+$("preset").addEventListener("change", e => {
+  if (e.target.value === "custom") return;
+  const keepLevels = cfg.levels; presetName = e.target.value; cfg = FS.load(presetName);
+  cfg.levels.names = keepLevels.names; cfg.levels.max_gap = keepLevels.max_gap; // your level scale survives a profile change
+  $("profErr").hidden = true; syncProfile(true); scheduleSave();
+});
+$("profJson").addEventListener("change", e => {
+  try { cfg = FS.load(JSON.parse(e.target.value)); presetName = "custom"; $("profErr").hidden = true; syncProfile(true); scheduleSave(); }
+  catch (err) { $("profErr").textContent = err.message; $("profErr").hidden = false; }
+});
+
+/* ---------- tables ---------- */
+const BOXES = [["tSlots", "cSlots", FS.readSlots], ["tApps", "cApps", FS.readApps], ["tMem", "cMem", t => Object.keys(FS.readMembers(t))], ["tHist", "cHist", FS.readHistory]];
+function countRows() {
+  for (const [id, tag, fn] of BOXES) {
+    try { const n = fn($(id).value).length; $(tag).textContent = t("rows")(n); $(tag).className = "tag " + (n ? "ok" : "warn"); }
+    catch (e) { $(tag).textContent = "!"; $(tag).className = "tag bad"; }
+  }
+}
+function loadExample() { $("tSlots").value = EX.slots; $("tApps").value = EX.apps; $("tMem").value = EX.members; $("tHist").value = EX.hist; $("now").value = "2026-11-19T12:00"; countRows(); }
+$("loadEx").addEventListener("click", loadExample);
+document.querySelectorAll("textarea").forEach(ta => ta.addEventListener("input", countRows));
+document.querySelectorAll("[data-drop]").forEach(ta => {
+  ta.addEventListener("dragover", e => e.preventDefault());
+  ta.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (!f) return; f.text().then(x => { ta.value = x; countRows(); }); });
+});
+["srcUrl", "srcToken", "srcDays", "rosterUrl", "utc", "tpl", "seed"].forEach(id => $(id).addEventListener("input", scheduleSave));
+$("seedMode").addEventListener("change", () => { $("seedBox").hidden = $("seedMode").value !== "manual"; scheduleSave(); });
+
+/* ---------- step 3: run ---------- */
+const pad = n => String(n).padStart(2, "0");
+const nowLocal = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+function levelColor(i, n) { return `hsl(${Math.round(48 + (i / Math.max(1, n - 1)) * 220)} 62% 52%)`; }
+function levelDot(m) {
+  const names = cfg.levels.names, i = names.indexOf((lastMembers[m] || {}).level);
+  return i < 0 ? "var(--muted)" : levelColor(i, names.length);
+}
+const shown = m => esc((lastMembers[m] || {}).name || m);
+function memName(m) { const lv = (lastMembers[m] || {}).level; return `${shown(m)}${lv ? ` <span class="hint">· ${esc(lv)}</span>` : ""}`; }
+function linkFor(tpl, s, a) {
+  const d = s.start.replace(" ", "T"), q = encodeURIComponent;
+  return tpl.replace(/\{(\w+)\}/g, (m, k) => ({slot_id: q(s.id), start: q(s.start), date: d.slice(0, 10), time: d.slice(11, 16), resource: q(s.resource || ""), members: q(a.members.join(",")), owner: q(a.members[0])}[k] ?? m));
+}
+function copyText(text, btn) {
+  const done = ok => { if (btn) { const o = btn.dataset.orig || (btn.dataset.orig = btn.textContent); btn.textContent = ok ? t("copied") : t("copy_fail"); setTimeout(() => btn.textContent = o, 1500); } };
+  const fallback = () => { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) {} ta.remove(); done(ok); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), fallback); else fallback();
+}
+function announcement() {
+  const r = lastResult, tpl = $("tpl").value.trim(), byAlloc = {}; r.allocations.forEach(a => byAlloc[a.slot] = a);
+  const nm = m => (lastMembers[m] || {}).name || m, mon = T[lang].ann_mon, lines = [t("ann_head"), ""];
+  for (const s of lastSlots) {
+    const a = byAlloc[s.id]; if (!a) continue;
+    const dd = s.start.slice(0, 10).split("-"), when = `${+dd[2]} ${mon[+dd[1] - 1]} ${s.start.slice(11, 16)}`;
+    let l = `${when}${s.resource ? " " + s.resource : ""}: ${a.members.map(nm).join(", ")}. ${nm(a.members[0])} ${t("ann_holder")}`;
+    if (a.open_seats) l += `; ${t("ann_free")}: ${a.open_seats}`;
+    if (tpl) l += `\n${linkFor(tpl, s, a)}`;
+    lines.push(l);
+  }
+  lines.push("", `${t("ann_seed")}: ${r.audit.seed}`, t("ann_verify"));
+  return lines.join("\n");
+}
+function renderResult() {
+  const r = lastResult; if (!r) { $("resEmpty").hidden = false; $("resBody").hidden = true; return; }
+  $("resEmpty").hidden = true; $("resBody").hidden = false;
+  const seated = r.allocations.reduce((s, a) => s + a.members.length, 0), open = r.allocations.reduce((s, a) => s + a.open_seats, 0);
+  const wl = Object.values(r.waitlist).reduce((s, a) => s + a.length, 0);
+  $("stats").innerHTML = [[r.allocations.length, "st_groups"], [seated, "st_people"], [open, "st_open"], [r.rejected.length, "st_rej"], [wl, "st_wait"], [r.not_due.length, "st_due"]]
+    .map(([n, k]) => `<div class="stat"><b>${n}</b><span>${esc(t(k))}</span></div>`).join("");
+  $("legend").innerHTML = cfg.levels.names.map((n, i) => `<span><i style="background:${levelColor(i, cfg.levels.names.length)}"></i>${esc(n)}</span>`).join("");
+  $("annText").value = announcement();
+  const tpl = $("tpl").value.trim(), out = [], byAlloc = {}; r.allocations.forEach(a => byAlloc[a.slot] = a);
+  for (const s of lastSlots) {
+    const a = byAlloc[s.id], d = s.start.replace("T", " ");
+    let h = `<div class="slot"><div class="slot-h"><b>${esc(d)}</b><span class="hint">${esc(s.resource || "")}</span>`;
+    if (r.not_due.includes(s.id)) h += `<span class="tag warn">${esc(t("st_due"))}</span></div></div>`;
+    else if (!a) h += `<span class="tag warn">${esc(t("nobody"))}</span></div></div>`;
+    else {
+      const owner = a.members[0];
+      h += `</div><div class="chips">` + a.members.map(m => `<span class="chip ${m === owner ? "owner" : ""}"><i style="background:${levelDot(m)}"></i>${memName(m)}${m === owner ? ` <span class="tag ok">${esc(t("owner"))}</span>` : ""}</span>`).join("")
+        + Array.from({length: a.open_seats}, () => `<span class="chip free"><i></i>${esc(t("free"))}</span>`).join("") + `</div>`;
+      if (a.open_seats) h += `<p class="hint">${esc(t("open_note"))}</p>`;
+      const w = r.waitlist[s.id] || [];
+      if (w.length) h += `<p class="hint">${esc(t("waitlist"))}: ${esc(w.map(id => (lastApps[id] || {members: [id]}).members.map(m => (lastMembers[m] || {}).name || m).join("+")).join(" → "))}</p>`;
+      if (tpl) { const u = linkFor(tpl, s, a); h += `<div class="row"><div class="link">${esc(u)}</div><button class="btn ghost small" data-copy="${esc(u)}">${esc(t("copy_link"))}</button></div>`; }
+      h += `</div>`;
+    }
+    out.push(h);
+  }
+  $("slotsOut").innerHTML = out.join("");
+  let ex = lastNotes.map(n => `<div class="msg warn">${esc(n)}</div>`).join("");
+  ex += `<h3>${esc(t("sub_note"))}</h3><p class="hint" style="margin:0">${esc(t("s_" + cfg.substitution.policy))}${cfg.substitution.policy !== "none" ? `, ${esc(t("f_freeze"))}: ${cfg.substitution.change_deadline_hours}` : ""}</p>`;
+  if (r.rejected.length) ex += `<h3>${esc(t("rej_title"))}</h3>` + r.rejected.map(x => `<p class="hint" style="margin:0"><b>${esc(x.app)}</b>: ${esc(T[lang].reasons[x.reason] || x.reason)}</p>`).join("");
+  $("extra").innerHTML = ex;
+  document.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => copyText(b.dataset.copy, b));
+}
+async function runDraw() {
+  $("runErr").textContent = "";
+  try {
+    if (srcType !== "manual") {
+      if (!APP) { $("needApp").hidden = false; return; }
+      if (!(await doFetch())) return;
+    }
+    const slots = FS.readSlots($("tSlots").value), apps = FS.readApps($("tApps").value), mem = FS.readMembers($("tMem").value), hist = FS.readHistory($("tHist").value);
+    if (!slots.length || !apps.length) throw new Error(t("empty"));
+    const now = $("now").value.trim() || nowLocal();
+    let seed;
+    if ($("seedMode").value === "auto") seed = FS.autoSeed(apps, slots, now);
+    else { seed = $("seed").value.trim(); if (!seed) throw new Error(t("no_seed")); }
+    lastNotes = [];
+    if (cfg.levels.policy !== "any" && !Object.values(mem).some(m => m.level)) lastNotes.push(t("no_levels"));
+    lastResult = FS.run(cfg, slots, apps, mem, hist, seed, now);
+    lastSlots = slots.slice().sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : a.id < b.id ? -1 : 1); lastMembers = mem; lastApps = {}; apps.forEach(a => lastApps[a.id] = a);
+    renderResult(); showTab("result");
+  } catch (e) { $("runErr").textContent = t("err_data") + e.message; }
+}
+$("runBtn").addEventListener("click", runDraw);
+function download(name, text) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], {type: "application/json"})); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  $("pubMsg").textContent = t("saved");
+}
+$("dlJson").addEventListener("click", () => lastResult && download("result.json", JSON.stringify(lastResult, null, 1)));
+$("cpJson").addEventListener("click", e => lastResult && copyText(JSON.stringify(lastResult, null, 1), e.target));
+$("cpAnn").addEventListener("click", e => copyText($("annText").value, e.target));
+
+/* ---------- verify ---------- */
+function doVerify() {
+  const o = $("vOut"); let r;
+  try { r = JSON.parse($("vText").value.replace(/^﻿/, "")); } catch (e) { o.innerHTML = `<div class="msg bad">${esc(t("not_json"))}</div>`; return; }
+  const [ok, why] = FS.verify(r);
+  o.innerHTML = ok ? `<div class="msg ok">${esc(t("ok_ver"))}${why !== "ok" ? " (" + esc(why) + ")" : ""}</div>` : `<div class="msg bad">${esc(t("bad_ver") + why)}</div>`;
+}
+$("vBtn").addEventListener("click", doVerify);
+$("vCur").addEventListener("click", () => { if (lastResult) { $("vText").value = JSON.stringify(lastResult, null, 1); doVerify(); } });
+
+/* ---------- tabs, language ---------- */
+function showTab(name) {
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  ["setup", "result", "verify"].forEach(n => $("p-" + n).hidden = n !== name);
+  try { history.replaceState(null, "", "#" + name); } catch (e) {}
+}
+document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("#langSeg button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.lang === lang)));
+  $("modePill").textContent = APP ? t("pill_app") : t("pill_off");
+  renderSrc(); syncProfile(true); countRows(); renderResult();
+}
+document.querySelectorAll("#langSeg button").forEach(b => b.addEventListener("click", () => { lang = b.dataset.lang; try { localStorage.setItem("fairslot-lang", lang); } catch (e) {} applyLang(); }));
+
+(async () => {
+  await restore();
+  if (srcType === "manual") loadExample();
+  $("seedBox").hidden = $("seedMode").value !== "manual";
+  applyLang();
+  const h = (location.hash || "").slice(1); if (["setup", "result", "verify"].includes(h)) showTab(h);
+})();
+
+</script>
+</body>
+</html>

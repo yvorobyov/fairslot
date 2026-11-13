@@ -21,7 +21,7 @@ class Csv(unittest.TestCase):
             p = os.path.join(d, "m.csv")
             with open(p, "w", encoding="utf-8-sig", newline="") as f:
                 f.write("id,level\nАня,beginner\nBob,advanced\n")
-            self.assertEqual(B.read_members(p), {"Аня": {"level": "beginner"}, "Bob": {"level": "advanced"}})
+            self.assertEqual(B.read_members(p), {"Аня": {"level": "beginner", "name": ""}, "Bob": {"level": "advanced", "name": ""}})
             r = {"allocations": [{"slot": "s", "members": ["Аня"], "open_seats": 1}]}
             out = os.path.join(d, "o.csv"); B.write_allocations(out, r)
             with open(out, encoding="utf-8") as f:

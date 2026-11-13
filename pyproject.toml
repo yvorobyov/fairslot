@@ -11,7 +11,7 @@ readme = "README.md"
 fairslot = "fairslot.__main__:main"
 
 [tool.setuptools.package-data]
-fairslot = ["presets/*.json"]
+fairslot = ["presets/*.json", "fairslot.html"]
 
 [tool.setuptools]
 packages = ["fairslot", "fairslot.adapters"]
