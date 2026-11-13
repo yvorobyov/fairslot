@@ -1,0 +1,3 @@
+{"_about": "Same fairness, but the draw runs only 12h before the slot, so nobody must know plans 3 days ahead; unfilled seats go to a first-come market 6h before.",
+ "order": "weighted_random", "draw_hours_before": 12,
+ "substitution": {"policy": "owner_picks", "change_deadline_hours": 2, "late_release_hours": 6}}

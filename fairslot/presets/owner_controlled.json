@@ -1,0 +1,3 @@
+{"_about": "Winner owns the slot and names any replacement (level and avoid rules still apply). No stranger is ever pushed from a waitlist.",
+ "order": "weighted_random", "draw_hours_before": 48,
+ "substitution": {"policy": "owner_picks", "change_deadline_hours": 3}, "waitlist": "none"}

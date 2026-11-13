@@ -1,0 +1,3 @@
+{"_about": "Levels are strict: a group may only contain one level. Combine with slots that carry a 'levels' pool for separate beginner / advanced sessions.",
+ "order": "weighted_random", "draw_hours_before": 48,
+ "levels": {"policy": "same"}, "substitution": {"policy": "owner_picks"}}

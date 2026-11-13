@@ -1,0 +1,4 @@
+{"_about": "Draw for prime slots, but unfilled seats and cancellations become a first-come market 8h before. Mirrors how the community already trades slots by hand.",
+ "order": "weighted_random", "draw_hours_before": 24,
+ "team": {"max_size": 4, "allow_open_seats": true},
+ "substitution": {"policy": "owner_picks", "late_release_hours": 8, "change_deadline_hours": 2}}

@@ -1,0 +1,4 @@
+{"_about": "Pure individual lottery, seats topped up from other applicants, no teams, no preferences.",
+ "order": "weighted_random", "draw_hours_before": 72,
+ "team": {"max_size": 1, "avoid_lists": false, "want_lists": false}, "levels": {"policy": "any"},
+ "substitution": {"policy": "waitlist_auto"}, "waitlist": "auto"}

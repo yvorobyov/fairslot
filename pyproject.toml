@@ -1,0 +1,17 @@
+[project]
+name = "fairslot"
+version = "0.1.0"
+description = "Configurable, publicly verifiable allocation of scarce booking slots (courts, rooms, desks). Standard library only."
+requires-python = ">=3.9"
+authors = [{ name = "Jegor" }]
+license = { text = "MIT" }
+readme = "README.md"
+
+[project.scripts]
+fairslot = "fairslot.__main__:main"
+
+[tool.setuptools.package-data]
+fairslot = ["presets/*.json"]
+
+[tool.setuptools]
+packages = ["fairslot", "fairslot.adapters"]

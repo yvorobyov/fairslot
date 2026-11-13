@@ -1,0 +1,4 @@
+{"_about": "Draw 72h ahead, teams first, then fill open seats. The classic proposal: draw ahead, teams first, open seats filled afterwards.",
+ "order": "weighted_random", "draw_hours_before": 72,
+ "team": {"max_size": 4}, "levels": {"policy": "adjacent"},
+ "substitution": {"policy": "waitlist_opt_in"}, "waitlist": "opt_in"}

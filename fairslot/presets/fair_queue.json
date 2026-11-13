@@ -1,0 +1,3 @@
+{"_about": "No randomness. Priority is weight (people who played less recently go first), then application time. Easy to explain, easy to audit; rewards early applicants within equal weight.",
+ "order": "priority_fifo", "draw_hours_before": 48,
+ "substitution": {"policy": "owner_picks"}}
