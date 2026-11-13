@@ -10,6 +10,7 @@ application  {"id": "a1", "slot": <slot id>, "members": ["m1","m2"], "open": tru
 history      [{"member": "m1", "start": "2026-11-10T20:00", "result": "won"|"played"|"lost"}]
 """
 import hashlib
+import re
 import json
 from datetime import datetime, timedelta
 
@@ -52,24 +53,36 @@ def member_weight(cfg, member, history, now):
     return max(w["min"], min(w["max"], val))
 
 
+_CYR, _LAT = "АВЕКМНОРСТХУаеорсух", "ABEKMHOPCTXYaeopcyx"
+_LOOK = {ord(a): b for a, b in zip(_CYR, _LAT)}
+
+
+def norm_level(s):
+    """Level labels are compared forgivingly: case, spaces, 5.0 = 5, Cyrillic look-alike letters (С = C)."""
+    s = str(s or "").strip().translate(_LOOK).lower().replace("ё", "е").replace(",", ".")
+    s = re.sub(r"\s+", " ", s)
+    return re.sub(r"^(-?\d+)\.0+$", r"\1", s)
+
+
 def levels_ok(cfg, members, ids):
     pol = cfg["levels"]["policy"]
     if pol == "any":
         return True
-    names = cfg["levels"]["names"]
+    pos = {norm_level(n): i for i, n in enumerate(cfg["levels"]["names"])}
     idx = []
     for m in ids:
-        lv = members.get(m, {}).get("level")
-        if lv not in names:
+        lv = norm_level(members.get(m, {}).get("level"))
+        if lv not in pos:
             return False if pol == "same" else True  # unknown level: lenient for adjacent
-        idx.append(names.index(lv))
+        idx.append(pos[lv])
     spread = max(idx) - min(idx) if idx else 0
     return spread <= (0 if pol == "same" else cfg["levels"].get("max_gap", 1))
 
 
 def pool_ok(slot, members, ids):
     pool = slot.get("levels")
-    return not pool or all(members.get(m, {}).get("level") in pool for m in ids)
+    pool = {norm_level(x) for x in (pool or [])}
+    return not pool or all(norm_level(members.get(m, {}).get("level")) in pool for m in ids)
 
 
 # ---------------------------------------------------------------- main

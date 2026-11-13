@@ -5,6 +5,7 @@ A *profile* is a JSON file that overrides DEFAULTS. See fairslot/presets/*.json.
 import copy
 import json
 import os
+import re
 
 DEFAULTS = {
     # How applicants are ordered for a slot.
@@ -64,6 +65,42 @@ def _merge(base, over):
     return out
 
 
+
+def parse_levels(spec):
+    """Level scale from a list, a comma list ("D, C, B") or a range ("1-7", "1-100", "1-5 step 0.5")."""
+    if isinstance(spec, (list, tuple)):
+        return [str(x).strip() for x in spec if str(x).strip()]
+    s = str(spec or "").strip()
+    if not s:
+        return []
+    if re.search(r"[,;|]", s):
+        return [x.strip() for x in re.split(r"[,;|]", s) if x.strip()]
+    L = re.fullmatch(r"([A-Za-zА-Яа-я])\s*(?:-|–|—|\.\.|to|до)\s*([A-Za-zА-Яа-я])", s, re.I)
+    if L:
+        a, b = ord(L.group(1)), ord(L.group(2))
+        if b < a or b - a > 50:
+            raise ValueError("levels range must go up")
+        return [chr(c) for c in range(a, b + 1)]
+    m = re.fullmatch(r"(-?(?:\d+(?:[.,]\d+)?|[.,]\d+))\s*(?:-|–|—|\.\.|to|до)\s*(-?(?:\d+(?:[.,]\d+)?|[.,]\d+))(?:\s*(?:step|by|шаг)\s*((?:\d+(?:[.,]\d+)?|[.,]\d+)))?", s, re.I)
+    if not m:
+        return s.split()
+    lo, hi = float(m.group(1).replace(",", ".")), float(m.group(2).replace(",", "."))
+    step = float((m.group(3) or "1").replace(",", "."))
+    if step <= 0 or hi < lo or (hi - lo) / step > 999:
+        raise ValueError("levels range must go up, with a positive step and at most 1000 levels")
+    n = int((hi - lo) / step + 1e-9) + 1
+    fmt = lambda v: str(int(round(v))) if abs(v - round(v)) < 1e-9 else ("%g" % round(v, 6))
+    return [fmt(lo + i * step) for i in range(n)]
+
+
+def _normalize(cfg):
+    lv = cfg["levels"]
+    lv["names"] = parse_levels(lv["names"])
+    if lv.get("max_gap") in ("auto", None):
+        lv["max_gap"] = max(1, int(round(len(lv["names"]) / 5.0)))
+    return cfg
+
+
 def validate(cfg):
     errs = []
     if cfg["order"] not in ("weighted_random", "priority_fifo"):
@@ -91,14 +128,14 @@ def validate(cfg):
 def load(profile=None):
     """profile: None, a dict, a path to a JSON file, or the name of a preset."""
     if profile is None:
-        return validate(copy.deepcopy(DEFAULTS))
+        return validate(_normalize(copy.deepcopy(DEFAULTS)))
     if isinstance(profile, dict):
-        return validate(_merge(DEFAULTS, profile))
+        return validate(_normalize(_merge(DEFAULTS, profile)))
     path = profile
     if not os.path.exists(path):
         path = os.path.join(os.path.dirname(__file__), "presets", profile + ".json")
     with open(path, encoding="utf-8") as f:
-        return validate(_merge(DEFAULTS, json.load(f)))
+        return validate(_normalize(_merge(DEFAULTS, json.load(f))))
 
 
 def presets():
